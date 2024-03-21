@@ -1,0 +1,38 @@
+{
+  "start": {
+    "type": "start",
+    "jq": "."
+  },
+  "product_detail": {
+    "type": "dubbo",
+    "requestJQ": ".start.params | {\"gdsProductId\": .gdsProductId}",
+    "responseJQ": ".productID as $gdsProductId |\n.category.categoryID as $categoryId |\n.bandList[0].bandCode as $bandCode |\n.isReservation as $reservationFlag |\n.voucherSender as $voucherSender |\n.invoiceMode as $invoiceMode |\n.priceMode as $priceMode |\n.usageTime as $usageTime |\n.attention as $attention |\n.instruction as $instruction |\n.exclusion as $exclusion |\n.inclusion as $inclusion |\n.packageList[] |\n.advanceBooking.days as $advanceBookingDays |\n.advanceBooking.time as $advanceBookingTime |\n.advanceBooking.description as $description |\n.packageID as $gdsPackageId |\n.resourceList[] |\n{\n    name: .name,\n    min_quantity: .minQuantity,\n    max_quantity: .maxQuantity,\n    advance_booking_days: $advanceBookingDays,\n    advance_booking_time: $advanceBookingTime,\n    category_id: $categoryId,\n    people_group: $bandCode | (if . == \"ADULT\" then 1 elif . == \"CHILD\" then 2 elif . == \"STUDENT\" then 4 elif . == \"ELDER\" then 8 elif . == \"PRIORITY\" then 16 elif . == \"FAMILY\" then 32 else 0 end),\n    unit_quantity: .unitQuantity,\n    reservation_flag: $reservationFlag,\n    sms_sender: $voucherSender | (if . == \"VENDER\" then 1 elif . == \"PLATFORM\" then 2 else 0 end),\n    invoice_mode: $invoiceMode,\n    price_mode: $priceMode | (if . == \"SINGLE_DATE\" then \"S\" elif . == \"MULTI_DATE\" then \"P\" elif . == \"UNIFIED_DATE\" then \"U\" else \"\" end),\n    direct_resource_id: .resourceID,\n    gds_package_id: $gdsPackageId,\n    gds_product_id: $gdsProductId,\n    add_infos: [\n        {\n            title_code: \"111\",\n            title: \"预定说明\",\n            sub_title_code: \"126\",\n            sub_title: \"有效期\",\n            desc_detail: $usageTime\n        },\n        {\n            title_code: \"111\",\n            title: \"预定说明\",\n            sub_title_code: \"83\",\n            sub_title: \"适用条件\",\n            desc_detail: .resourceAdditionInfoList | map(select(.titleCode = \"TargetAudience\"))[0].contentList[0]\n        },\n        {\n            title_code: \"111\",\n            title: \"预定说明\",\n            sub_title_code: \"116\",\n            sub_title: \"预定时间\",\n            desc_detail: $description\n        },\n        {\n            title_code: \"115\",\n            title: \"其他说明\",\n            sub_title_code: \"125\",\n            sub_title: \"其他须知\",\n            desc_detail: $attention\n        },\n        {\n            title_code: \"115\",\n            title: \"其他说明\",\n            sub_title_code: \"125\",\n            sub_title: \"其他须知\",\n            desc_detail: $instruction\n        },\n        {\n            title_code: \"112\",\n            title: \"费用说明\",\n            sub_title_code: \"45\",\n            sub_title: \"费用不包含\",\n            desc_detail: $exclusion\n        },\n        {\n            title_code: \"112\",\n            title: \"费用说明\",\n            sub_title_code: \"15\",\n            sub_title: \"费用包含\",\n            desc_detail: $inclusion\n        }\n    ] | map(select(.desc_detail != null))\n}"
+  },
+  "price_calendar": {
+    "type": "dubbo",
+    "requestJQ": ".start.params | {\"gdsProductId\": .gdsProductId}",
+    "responseJQ": ".packageList[] |\n.resourceList[] |\n.resourceID as $resourceId |\n[\n    .calendarDetailList[] |\n    {\n        price_date: .date,\n        price: .salePrice,\n        market_price: .marketPrice,\n        ctrip_price: .salePrice,\n        inventory_num: .stock,\n        resource_id: $resourceId,\n        cost_price: .netPrice\n    }\n]"
+  },
+  "resource_process": {
+    "type": "script",
+    "jq": ".product_detail.response[] | null"
+  },
+  "tags": {
+    "type": "dubbo",
+    "requestJQ": ".product_detail.response[] | {\"resourceId\": .direct_resource_id}",
+    "responseJQ": "{\n    need_ticket: map(select(.tagGroup == \"EXCHANGE_WAY\"))[0].code | (if . == \"NEED_COLLECT_TICKETS\" then 1 else 0 end)\n}"
+  },
+  "refund_policy": {
+    "type": "dubbo",
+    "requestJQ": ".product_detail.response[] | {\"resourceId\": .direct_resource_id}",
+    "responseJQ": "{\n    refund_type: .refundType,\n    date_limit_mode: .dateLimitMode,\n    partial_refund: .partialRefund,\n    support_weekend: .supportWeekend,\n    additional_note: .additionalNote,\n    overdue_refund: .overdueRefund,\n    expire_auto_refund_time: .expireAutoRefundTime,\n    refund_policy_costs: [\n        .refundPolicyCostList[] |\n        {\n            day: .day,\n            time: .time,\n            time_after: .timeAfter,\n            cost_type: .costType,\n            cost_value: .costValue\n        }\n    ]\n}"
+  },
+  "save_db": {
+    "type": "script",
+    "jq": "."
+  },
+  "end": {
+    "type": "end",
+    "jq": "."
+  }
+}

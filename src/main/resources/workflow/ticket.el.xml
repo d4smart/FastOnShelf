@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<flow>
+  <nodes>
+    <node id="for_index" name="for_index" type="for_script" file="groovy/for_index.groovy"/>
+    <node id="save_db" name="save_db" type="script" file="groovy/save_db.groovy"/>
+  </nodes>
+
+  <chain name="sync_ticket">
+    THEN(
+    start.tag("start"),
+    product_detail.tag("product_detail"),
+    price_calendar.tag("price_calendar"),
+    FOR(for_index.tag("resource_process")).DO(
+      THEN(
+      tags.tag("tags"),
+      refund_policy.tag("refund_policy")
+      )
+    ),
+    save_db.tag("save_db"),
+    end.tag("end")
+    );
+  </chain>
+
+  <chain name="sync_ticket_concurrent">
+    THEN(
+      start.tag("start"),
+      WHEN(
+        THEN(
+          product_detail.tag("product_detail"),
+          FOR(for_index.tag("resource_process")).DO(
+            WHEN(
+              tags.tag("tags"),
+              refund_policy.tag("refund_policy")
+            )
+          )
+        ),
+        price_calendar.tag("price_calendar")
+      ),
+      save_db.tag("save_db"),
+      end.tag("end")
+    );
+  </chain>
+</flow>
