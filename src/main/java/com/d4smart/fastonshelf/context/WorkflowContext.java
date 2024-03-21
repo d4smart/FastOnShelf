@@ -17,6 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class WorkflowContext implements Closeable  {
 
+    /**
+     * 所有线程公有
+     */
     private final ConcurrentHashMap<String, Object> dataMap = new ConcurrentHashMap<>();
 
     public WorkflowContext(String chainName) {

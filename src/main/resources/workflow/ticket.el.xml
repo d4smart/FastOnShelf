@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <flow>
   <nodes>
-    <node id="for_index" name="for_index" type="for_script" file="groovy/for_index.groovy"/>
     <node id="save_db" name="save_db" type="script" file="groovy/save_db.groovy"/>
   </nodes>
 
@@ -22,18 +21,15 @@
   </chain>
 
   <chain name="sync_ticket_concurrent">
+    // 使用resource_id并发调用门票tag和门票取消政策接口
+    w1 = WHEN(tags.tag("tags"), refund_policy.tag("refund_policy"));
+    // 先使用gds_product_id调用门票资源接口，再根据返回的resource_id列表循环执行
+    t1 = THEN(product_detail.tag("product_detail"), FOR(for_index.tag("resource_process")).parallel(true).DO(w1));
+
     THEN(
       start.tag("start"),
       WHEN(
-        THEN(
-          product_detail.tag("product_detail"),
-          FOR(for_index.tag("resource_process")).DO(
-            WHEN(
-              tags.tag("tags"),
-              refund_policy.tag("refund_policy")
-            )
-          )
-        ),
+        t1,
         price_calendar.tag("price_calendar")
       ),
       save_db.tag("save_db"),

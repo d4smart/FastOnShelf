@@ -4,11 +4,13 @@ import com.alibaba.ttl.TransmittableThreadLocal;
 
 public class ComponentContextHandler {
 
+    /**
+     * 每个线程私有
+     */
     private static final TransmittableThreadLocal<ComponentContext> contextThreadLocal = new TransmittableThreadLocal<>();
 
     /**
      * 获取组件执行上下文
-     * @return 组件执行上下文
      */
     public static ComponentContext getContext() {
         ComponentContext context = contextThreadLocal.get();
